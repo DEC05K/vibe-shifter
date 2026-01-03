@@ -1,0 +1,32 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "dd86bdbd5af3b46679b807523fd9f800"
+name = "delivery-gift-lite"
+# application_url は update-url.sh スクリプトで自動更新されます
+# 手動で変更する場合は、この行を編集してください
+application_url = "https://newfoundland-gulf-wait-finder.trycloudflare.com"
+embedded = true
+
+[webhooks]
+api_version = "2024-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [
+  "https://newfoundland-gulf-wait-finder.trycloudflare.com/auth/callback",
+  "https://newfoundland-gulf-wait-finder.trycloudflare.com/auth/shopify/callback"
+]
+
+[build]
+automatically_update_urls_on_dev = true

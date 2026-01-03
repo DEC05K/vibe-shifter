@@ -1,0 +1,188 @@
+{% comment %}
+  Vibe Shifter AI - V10 (MONETIZATION READY)
+  「メタフィールド」を読み取って、無料会員にはプレミアム素材を使わせない
+  「ロック機能」を搭載した収益化対応版。
+{% endcomment %}
+
+{% assign user_plan = shop.metafields.vibeshifter.plan %}
+{% assign is_premium = false %}
+{% if user_plan == 'premium' %}
+  {% assign is_premium = true %}
+{% endif %}
+
+{% assign selected_mode = block.settings.texture_mode %}
+{% assign opacity_val = block.settings.vibe_opacity | divided_by: 100.0 %}
+{% assign pattern_size = block.settings.pattern_size %}
+{% assign layer_mode = block.settings.layer_mode %}
+{% assign force_transparent = block.settings.force_transparent %}
+{% assign transparent_all = block.settings.transparent_all %}
+
+{% if is_premium == false %}
+  {% if selected_mode == 'preset_2' or selected_mode == 'preset_3' or selected_mode == 'preset_4' %}
+    {% assign selected_mode = 'preset_1' %}
+    <script>console.log("Vibe Shifter: Free plan detected. Premium assets are locked.");</script>
+  {% endif %}
+{% endif %}
+
+
+{% if selected_mode == 'preset_1' %}
+  {% assign bg_image_url = 'preset-1.png' | asset_url %}
+{% elsif selected_mode == 'preset_2' %}
+  {% assign bg_image_url = 'preset-2.jpg' | asset_url %}
+{% elsif selected_mode == 'preset_3' %}
+  {% assign bg_image_url = 'preset-3.png' | asset_url %}
+{% elsif selected_mode == 'preset_4' %}
+  {% assign bg_image_url = 'preset-4.png' | asset_url %}
+{% else %}
+  {% assign bg_image_url = block.settings.custom_image | image_url: width: 2000 %}
+{% endif %}
+
+<div class="vibe-overlay-v10">&nbsp;</div>
+
+<style>
+  .vibe-overlay-v10 {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    display: block !important;
+    
+    background-image: url("{{ bg_image_url }}");
+    background-repeat: repeat;
+    background-size: {{ pattern_size }}px auto;
+    background-position: top left;
+    
+    opacity: {{ opacity_val }};
+    mix-blend-mode: {{ block.settings.vibe_blend }};
+    z-index: {{ layer_mode }};
+  }
+
+  {% if force_transparent %}
+    body {
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+
+    {% if transparent_all %}
+      .gradient, .color-background-1, .color-scheme-1 {
+        background: transparent !important;
+        background-color: transparent !important;
+      }
+    {% else %}
+      .gradient:not(.announcement-bar):not(.header-wrapper):not(header):not(.footer):not(.shopify-section-group-header-group):not(.shopify-section-group-footer-group),
+      .color-background-1:not(.announcement-bar):not(.header-wrapper):not(header):not(.footer):not(.shopify-section-group-header-group):not(.shopify-section-group-footer-group),
+      .color-scheme-1:not(.announcement-bar):not(.header-wrapper):not(header):not(.footer):not(.shopify-section-group-header-group):not(.shopify-section-group-footer-group) {
+        background: transparent !important;
+        background-color: transparent !important;
+      }
+    {% endif %}
+    
+    .page-container, .main-content {
+       background: transparent !important;
+    }
+  {% endif %}
+</style>
+
+{% schema %}
+{
+  "name": "Vibe Shifter v10",
+  "target": "body",
+  "settings": [
+    {
+      "type": "header",
+      "content": "1. 素材を選ぶ (Material)"
+    },
+    {
+      "type": "paragraph",
+      "content": "⚠️ No.2〜4 はPROプラン専用です。無料プランでは選択してもNo.1が表示されます。"
+    },
+    {
+      "type": "select",
+      "id": "texture_mode",
+      "label": "テクスチャの種類",
+      "options": [
+        { "value": "preset_1", "label": "No.1: ノイズ (Free)" },
+        { "value": "preset_2", "label": "🔒 No.2: 和紙 (Pro Only)" },
+        { "value": "preset_3", "label": "🔒 No.3: 桜 (Pro Only)" },
+        { "value": "preset_4", "label": "🔒 No.4: ホログラム (Pro Only)" },
+        { "value": "custom", "label": "📁 カスタム画像アップロード" }
+      ],
+      "default": "preset_1"
+    },
+    /* 以下、設定項目はv9と同じなので省略せずそのまま記述 */
+    {
+      "type": "image_picker",
+      "id": "custom_image",
+      "label": "画像をアップロード",
+      "info": "※上で「カスタム画像」を選んだ場合のみ有効"
+    },
+    {
+      "type": "header",
+      "content": "2. 見た目を調整 (Appearance)"
+    },
+    {
+      "type": "range",
+      "id": "vibe_opacity",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "label": "フィルターの濃さ",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "pattern_size",
+      "min": 50,
+      "max": 1000,
+      "step": 10,
+      "unit": "px",
+      "label": "柄のサイズ (拡大・縮小)",
+      "default": 300
+    },
+    {
+      "type": "select",
+      "id": "vibe_blend",
+      "label": "合成モード (雰囲気)",
+      "options": [
+        { "value": "multiply", "label": "乗算 (暗く馴染む：和紙・汚れ)" },
+        { "value": "screen", "label": "スクリーン (明るく光る：ネオン)" },
+        { "value": "overlay", "label": "オーバーレイ (コントラスト強調)" },
+        { "value": "normal", "label": "通常 (そのまま表示)" }
+      ],
+      "default": "multiply"
+    },
+    {
+      "type": "header",
+      "content": "3. 配置と透過 (Layout)"
+    },
+    {
+      "type": "select",
+      "id": "layer_mode",
+      "label": "表示する場所",
+      "options": [
+        { "value": "-1", "label": "【推奨】背景の裏側 (文字・画像の下)" },
+        { "value": "10", "label": "標準 (画像の上・メニューの下)" },
+        { "value": "2147483647", "label": "最前面 (すべての上)" }
+      ],
+      "default": "-1"
+    },
+    {
+      "type": "checkbox",
+      "id": "force_transparent",
+      "label": "テーマの背景色を透明化する",
+      "default": true,
+      "info": "※重要：「背景の裏側」に表示する場合はONにしてください。"
+    },
+    {
+      "type": "checkbox",
+      "id": "transparent_all",
+      "label": "ヘッダーやフッターも透明化する",
+      "default": false,
+      "info": "ONにすると、メニューバーやアナウンスバーの背景色も消えます。"
+    }
+  ]
+}
+{% endschema %}
