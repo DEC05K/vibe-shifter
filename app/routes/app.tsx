@@ -14,15 +14,49 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       throw new Response("SHOPIFY_API_KEY is not configured", { status: 500 });
     }
 
+    // SHOPIFY_APP_URLの検証
+    const appUrl = process.env.SHOPIFY_APP_URL;
+    if (!appUrl) {
+      console.error("SHOPIFY_APP_URL is not set");
+      throw new Response("SHOPIFY_APP_URL is not configured", { status: 500 });
+    }
+
+    // URLが有効か確認
+    try {
+      const url = new URL(appUrl);
+      if (url.protocol !== "https:") {
+        console.error(`SHOPIFY_APP_URL must use https protocol. Current: ${appUrl}`);
+        throw new Response("SHOPIFY_APP_URL must use https protocol", { status: 500 });
+      }
+    } catch (urlError) {
+      console.error(`Invalid SHOPIFY_APP_URL: ${appUrl}`, urlError);
+      throw new Response("SHOPIFY_APP_URL is invalid", { status: 500 });
+    }
+
     const result = await authenticate.admin(request);
     return json({ apiKey: process.env.SHOPIFY_API_KEY || "" });
   } catch (error) {
     // エラーの詳細をログに記録
     console.error("Authentication error in app.tsx loader:", error);
     
+    // ShopifyErrorの場合、詳細をログに記録
+    if (error instanceof Error && error.name === "ShopifyError") {
+      console.error("ShopifyError details:", {
+        message: error.message,
+        stack: error.stack,
+        SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
+      });
+    }
+    
     // 認証エラーの場合、Shopifyの認証フローに任せる（リダイレクトを投げる）
     if (error instanceof Response) {
       throw error;
+    }
+    
+    // ShopifyErrorの場合、500エラーを返す（リダイレクトループを防ぐ）
+    if (error instanceof Error && error.message.includes("Invalid URL")) {
+      console.error("Invalid URL error detected. This may cause redirect loops.");
+      throw new Response("Invalid URL configuration. Please check SHOPIFY_APP_URL.", { status: 500 });
     }
     
     // その他のエラーの場合、500エラーを返す

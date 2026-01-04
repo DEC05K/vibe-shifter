@@ -29,11 +29,34 @@ if (missingEnvVars.length > 0) {
   console.error("Missing required environment variables:", missingEnvVars.join(", "));
 }
 
-// 環境変数からURLを取得
-const appUrl = process.env.SHOPIFY_APP_URL || "";
+// 環境変数からURLを取得し、検証
+let appUrl = process.env.SHOPIFY_APP_URL || "";
+
+// URLの検証と正規化
+if (appUrl) {
+  try {
+    // URLが有効か確認
+    const url = new URL(appUrl);
+    // httpsであることを確認
+    if (url.protocol !== "https:") {
+      console.error(`SHOPIFY_APP_URL must use https protocol. Current: ${appUrl}`);
+      appUrl = "";
+    } else {
+      // 末尾のスラッシュを削除
+      appUrl = appUrl.replace(/\/$/, "");
+    }
+  } catch (error) {
+    console.error(`Invalid SHOPIFY_APP_URL: ${appUrl}`, error);
+    appUrl = "";
+  }
+}
 
 if (!appUrl) {
-  console.error("SHOPIFY_APP_URL is not set. This may cause authentication issues.");
+  console.error("SHOPIFY_APP_URL is not set or invalid. This will cause authentication issues.");
+  // 本番環境では、appUrlが必須なので、エラーを投げる
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SHOPIFY_APP_URL is required in production environment");
+  }
 }
 
 const shopify = shopifyApp({
@@ -41,7 +64,7 @@ const shopify = shopifyApp({
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: "2024-10",
   scopes: process.env.SCOPES?.split(",") || [],
-  appUrl: appUrl, // 環境変数から取得（リダイレクトループを防ぐため）
+  appUrl: appUrl || "https://v0-vibe-shifter.vercel.app", // フォールバックURLを設定
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
