@@ -77,3 +77,4 @@ https://admin.shopify.com/store/gift-app-test-01/apps/delivery-gift-lite
 3. アプリが実際に表示されているか確認してください
 4. それでも問題が解決しない場合は、アプリを再インストールしてください
 
+

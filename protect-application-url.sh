@@ -22,3 +22,4 @@ else
   echo "✅ application_urlは既に正しい値です: $FIXED_URL"
 fi
 
+

@@ -110,3 +110,4 @@ https://inquiry-tvs-energy-kong.trycloudflare.com
 3. **固定URLの使用を検討**
    - Cloudflare Tunnelの有料プランを使用して、固定のカスタムドメインを設定
 
+

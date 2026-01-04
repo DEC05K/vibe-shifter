@@ -62,3 +62,4 @@ https://admin.shopify.com/store/gift-app-test-01/apps/delivery-gift-lite
 ステップ3が完了したら、「ステップ3完了」とお知らせください。
 その後、動作確認を行い、問題があれば解決します。
 
+

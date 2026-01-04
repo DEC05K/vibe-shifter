@@ -84,3 +84,4 @@ DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.xxxxx.supabase.co:5432/po
 
 これで、ビルドタイムアウトの問題は解決するはずです。ビルド時間は通常2-5分で完了するはずです。
 
+

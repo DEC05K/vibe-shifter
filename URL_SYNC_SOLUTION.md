@@ -126,3 +126,4 @@ https://inquiry-tvs-energy-kong.trycloudflare.com
 - Partnersダッシュボードの自動更新機能の実装を検討
 - 固定URLの使用を検討（Cloudflare Tunnel有料プラン）
 
+

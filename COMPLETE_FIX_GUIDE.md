@@ -144,3 +144,4 @@ shopify app deploy --no-release --force
 
 これで、エラーは解決するはずです！
 
+

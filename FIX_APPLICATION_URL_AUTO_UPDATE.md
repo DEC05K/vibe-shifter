@@ -120,3 +120,4 @@ Vercelを使用している場合、**`shopify app dev`を実行しない**の�
 - `shopify app dev`を実行する場合は、監視スクリプトを使用
 - または、Vercelを使用している場合は`shopify app dev`を実行しない
 
+

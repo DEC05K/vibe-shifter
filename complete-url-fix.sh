@@ -134,3 +134,4 @@ echo "   手動操作が完了したら、以下で動作確認してくださ�
 echo "   curl -I ${LATEST_URL}"
 echo ""
 
+

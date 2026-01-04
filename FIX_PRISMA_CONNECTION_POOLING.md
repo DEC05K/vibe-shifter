@@ -82,3 +82,4 @@ git push
 
 これで、`prepared statement "s0" already exists`エラーは解決するはずです。
 
+

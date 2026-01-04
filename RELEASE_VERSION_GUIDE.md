@@ -53,3 +53,4 @@ shopify app versions list
 
 これで、新しいバージョンがActiveになり、VercelのURLが使用されるようになります。
 
+

@@ -119,3 +119,4 @@ SHOPIFY_APP_URL=https://app.your-app-name.tk
 
 これで、URLが固定され、再起動しても変わりません！
 
+

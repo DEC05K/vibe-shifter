@@ -87,3 +87,4 @@ watch -n 30 ./update-url-safe.sh
 - Shopify Partnersダッシュボードの設定は手動で更新する必要があります
 - バックアップは`.shopify-backups/`ディレクトリに保存されます（gitignoreに追加済み）
 
+

@@ -119,3 +119,4 @@ shopify app info
 
 **本番環境の場合**: 解決策3（Cloudflare Tunnel有料プラン）または、VPS/クラウドサーバーを使用することを推奨します。
 
+

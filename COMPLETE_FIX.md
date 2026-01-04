@@ -165,3 +165,4 @@ https://forest-cafe-spice-magnificent.trycloudflare.com
 - 固定URLを使用（Cloudflare Tunnel有料プラン）
 - または、URLが変更されたら毎回再インストール
 
+

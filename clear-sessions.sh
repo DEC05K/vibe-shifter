@@ -67,3 +67,4 @@ echo "      - https://admin.shopify.com/store/gift-app-test-01/apps/delivery-gif
 echo ""
 echo "✨ 完了しました！"
 
+

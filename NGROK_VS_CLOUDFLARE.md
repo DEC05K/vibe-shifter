@@ -187,3 +187,4 @@ SHOPIFY_APP_URL=https://your-fixed-domain.ngrok-free.app
 
 **開発環境ではngrokを推奨**します。セットアップが簡単で、すぐに使い始められます。
 
+

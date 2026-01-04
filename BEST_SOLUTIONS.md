@@ -181,3 +181,4 @@ SQLiteからPostgreSQLに移行する必要があります：
 
 **最も簡単な方法**: shopify app devを継続的に実行し続ける
 
+

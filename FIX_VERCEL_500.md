@@ -111,3 +111,4 @@ DATABASE_URL="postgresql://..." npx prisma migrate deploy
 
 これで、HTTP ERROR 500は解決するはずです。
 
+

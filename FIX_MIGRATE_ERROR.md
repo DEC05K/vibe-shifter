@@ -116,3 +116,4 @@ DATABASE_URL="postgresql://postgres:Blessinghamlet_315%2B@db.あなたの実際�
 
 これで、マイグレートが成功するはずです！
 
+

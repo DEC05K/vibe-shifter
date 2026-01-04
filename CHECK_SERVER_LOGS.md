@@ -56,3 +56,4 @@ https://admin.shopify.com/store/gift-app-test-01/apps/delivery-gift-lite
 - ログファイルには保存されません
 - ブラウザでアプリにアクセスした時に、リアルタイムでログが表示されます
 
+

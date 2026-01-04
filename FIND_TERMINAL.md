@@ -84,3 +84,4 @@ shopify app dev
 3. `shopify app dev`で再起動
 4. そのターミナルでログを確認
 
+

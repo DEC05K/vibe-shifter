@@ -93,3 +93,4 @@ pkill -f "shopify app dev"
 
 これで、`application_url`が自動更新されることはなくなります。
 
+
