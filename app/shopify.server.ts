@@ -94,22 +94,30 @@ if (!prisma.session) {
   );
 }
 
-// テーブルの存在を確認（デバッグ用 - 非同期で実行）
-prisma.session
-  .count()
-  .then((count) => {
-    console.log("✅ Prisma session table exists. Record count:", count);
-  })
-  .catch((error) => {
-    console.error("❌ Prisma session table check failed:", error);
+// テーブルの存在を確認（デバッグ用 - 接続を確立してから実行）
+console.log("Testing database connection and table access...");
+(async () => {
+  try {
+    // まず接続を確立
+    console.log("Step 1: Connecting to database...");
+    await prisma.$connect();
+    console.log("✅ Database connection established");
+    
+    // 次にテーブルの存在を確認
+    console.log("Step 2: Checking session table...");
+    const count = await prisma.session.count();
+    console.log("✅ Session table exists. Record count:", count);
+  } catch (error) {
+    console.error("❌ Database connection or table check failed:", error);
     console.error("Error details:", {
-      message: error.message,
-      code: error.code,
-      meta: error.meta,
-      name: error.name,
-      stack: error.stack,
+      message: error instanceof Error ? error.message : String(error),
+      code: (error as any)?.code,
+      meta: (error as any)?.meta,
+      name: error instanceof Error ? error.name : typeof error,
+      stack: error instanceof Error ? error.stack : "No stack trace",
     });
-  });
+  }
+})();
 
 // PrismaSessionStorageを初期化
 // 注意: PrismaSessionStorageは初期化時にテーブルの存在を確認するため、
@@ -117,43 +125,110 @@ prisma.session
 // また、データベース接続が確立されている必要があります
 
 // データベース接続を確立（PrismaSessionStorageの初期化前に接続を確実にする）
-console.log("Establishing database connection...");
-prisma.$connect()
-  .then(() => {
-    console.log("✅ Database connection established");
-  })
-  .catch((error) => {
-    console.error("❌ Failed to connect to database:", error);
-    // 接続エラーでも続行（PrismaSessionStorageが接続を試みる）
-  });
+console.log("=== Establishing Database Connection ===");
+console.log("DATABASE_URL configured:", process.env.DATABASE_URL ? "Yes" : "No");
+console.log("DATABASE_URL preview:", process.env.DATABASE_URL ? 
+  process.env.DATABASE_URL.replace(/:[^:@]+@/, ":****@").substring(0, 50) + "..." : "Not set");
+
+// 接続を試みる（同期処理として実行）
+let connectionEstablished = false;
+try {
+  console.log("Calling prisma.$connect()...");
+  // 注意: $connect()は非同期だが、ここではPromiseを待たない
+  // PrismaSessionStorageが接続を管理するため
+  prisma.$connect()
+    .then(() => {
+      connectionEstablished = true;
+      console.log("✅ Database connection established successfully");
+      
+      // 接続後にテーブルの存在を確認
+      return prisma.session.count();
+    })
+    .then((count) => {
+      console.log("✅ Session table exists. Record count:", count);
+    })
+    .catch((error) => {
+      console.error("❌ Database connection or table check failed:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        name: error.name,
+      });
+    });
+} catch (error) {
+  console.error("❌ Failed to initiate database connection:", error);
+  // 接続エラーでも続行（PrismaSessionStorageが接続を試みる）
+}
+
+// PrismaSessionStorageを初期化
+// 重要: データベース接続を確立してから初期化する必要がある
+// しかし、モジュールレベルでは非同期処理を待てないため、
+// PrismaSessionStorageの初期化時に接続リトライを増やす
 
 let prismaSessionStorage: PrismaSessionStorage;
 try {
-  console.log("Initializing PrismaSessionStorage with tableName: 'session'");
+  console.log("=== Initializing PrismaSessionStorage ===");
   console.log("PrismaSessionStorage options:", {
     tableName: "session",
-    connectionRetries: 5, // デフォルトの2回から5回に増やす
-    connectionRetryIntervalMs: 10000, // デフォルトの5秒から10秒に増やす
+    connectionRetries: 10, // デフォルトの2回から10回に大幅に増やす
+    connectionRetryIntervalMs: 5000, // 5秒間隔（デフォルトと同じ）
   });
+  
+  // 初期化前に、prisma.sessionが利用可能か再確認
+  console.log("Final check before initialization:");
+  console.log("- prisma exists:", !!prisma);
+  console.log("- prisma.session exists:", !!prisma.session);
+  console.log("- prisma.session.count type:", typeof prisma.session?.count);
+  
+  if (!prisma.session) {
+    throw new Error("prisma.session is not available. Cannot initialize PrismaSessionStorage.");
+  }
   
   prismaSessionStorage = new PrismaSessionStorage(prisma, {
     tableName: "session", // Prisma Clientのモデル名（小文字）を指定
-    connectionRetries: 5, // 接続リトライ回数を増やす（デフォルト: 2）
-    connectionRetryIntervalMs: 10000, // リトライ間隔を増やす（デフォルト: 5000ms）
+    connectionRetries: 10, // 接続リトライ回数を大幅に増やす（デフォルト: 2 → 10）
+    connectionRetryIntervalMs: 5000, // リトライ間隔（デフォルト: 5000ms）
   });
-  console.log("✅ PrismaSessionStorage initialized successfully");
+  console.log("✅ PrismaSessionStorage instance created");
   
-  // 初期化後の状態を確認（非同期）
-  prismaSessionStorage.isReady()
-    .then((isReady) => {
-      console.log("PrismaSessionStorage isReady:", isReady);
-      if (!isReady) {
-        console.error("⚠️ WARNING: PrismaSessionStorage is not ready");
-      }
-    })
-    .catch((error) => {
-      console.error("❌ PrismaSessionStorage isReady check failed:", error);
-    });
+  // 初期化後の状態を確認（非同期 - 即座に実行）
+  // 注意: PrismaSessionStorageは初期化時にpollForTable()を実行するため、
+  // この時点ではまだ準備できていない可能性がある
+  setTimeout(() => {
+    prismaSessionStorage.isReady()
+      .then((isReady) => {
+        console.log("PrismaSessionStorage isReady (after delay):", isReady);
+        if (!isReady) {
+          console.error("⚠️ WARNING: PrismaSessionStorage is not ready after initialization");
+          console.error("This may indicate a database connection or table access issue.");
+          
+          // 追加のデバッグ: 直接テーブルにアクセスを試みる
+          prisma.session.count()
+            .then((count) => {
+              console.log("✅ Direct prisma.session.count() succeeded. Count:", count);
+            })
+            .catch((error) => {
+              console.error("❌ Direct prisma.session.count() failed:", error);
+              console.error("Error details:", {
+                message: error.message,
+                code: error.code,
+                meta: error.meta,
+              });
+            });
+        } else {
+          console.log("✅ PrismaSessionStorage is ready and operational");
+        }
+      })
+      .catch((error) => {
+        console.error("❌ PrismaSessionStorage isReady check failed:", error);
+        console.error("Error details:", {
+          message: error.message,
+          code: error.code,
+          meta: error.meta,
+        });
+      });
+  }, 2000); // 2秒後に確認（初期化の完了を待つ）
+  
 } catch (error) {
   console.error("❌ CRITICAL: Failed to initialize PrismaSessionStorage");
   console.error("Error:", error);
@@ -163,9 +238,8 @@ try {
     stack: error instanceof Error ? error.stack : "No stack trace",
   });
   
-  // エラーが発生しても、アプリは起動を続ける（後で接続を試みる）
-  // ただし、セッションストレージは使用できない
-  console.error("⚠️ WARNING: Continuing without PrismaSessionStorage. Session storage will not work.");
+  // エラーが発生した場合、アプリは起動できない
+  // PrismaSessionStorageは必須のため、エラーを投げる
   throw error;
 }
 
