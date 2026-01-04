@@ -60,11 +60,12 @@ if (!appUrl) {
 }
 
 // PrismaSessionStorageを初期化
-// テーブル名を明示的に指定（Prismaスキーマで@@map("Session")を使用しているため）
-// PrismaSessionStorageはデフォルトで'session'（小文字）を探すが、
-// データベースには'Session'（大文字）が存在するため、明示的に指定
+// 重要: tableNameパラメータには、Prisma Clientのモデル名を指定する必要があります
+// Prisma Clientでは、モデル名が"Session"の場合、prisma.session（小文字）としてアクセスできます
+// データベースのテーブル名は@@map("Session")で指定されているため、大文字の"Session"が使用されます
+// しかし、PrismaSessionStorageのtableNameパラメータには、Prisma Clientのモデル名（小文字の"session"）を指定する必要があります
 const prismaSessionStorage = new PrismaSessionStorage(prisma, {
-  tableName: "Session", // テーブル名を明示的に指定（大文字のS）
+  tableName: "session", // Prisma Clientのモデル名（小文字）を指定
 });
 
 const shopify = shopifyApp({
