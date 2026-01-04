@@ -33,8 +33,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   try {
+    // リダイレクトループを防ぐため、現在のURLを確認
+    const url = new URL(request.url);
+    console.log("=== app.tsx loader ===");
+    console.log("Request URL:", url.toString());
+    console.log("Pathname:", url.pathname);
+    
+    // OAuthコールバックパスの場合は、auth.$.tsxに処理を任せる
+    if (url.pathname.startsWith("/auth/")) {
+      console.log("OAuth path detected, skipping authentication check");
+      return json({ apiKey: process.env.SHOPIFY_API_KEY || "" });
+    }
+    
     // 認証を実行（これがリダイレクトを返す可能性がある）
+    console.log("Calling authenticate.admin(request)...");
     await authenticate.admin(request);
+    console.log("✅ Authentication successful");
     return json({ apiKey: process.env.SHOPIFY_API_KEY || "" });
   } catch (error) {
     // エラーの詳細をログに記録
@@ -47,6 +61,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const redirectUrl = error.headers.get("Location");
       if (redirectUrl) {
         console.log("Redirecting to:", redirectUrl);
+        
+        // リダイレクト先が現在のURLと同じ場合、ループを防ぐ
+        const currentUrl = new URL(request.url);
+        const redirectUrlObj = new URL(redirectUrl, request.url);
+        if (currentUrl.pathname === redirectUrlObj.pathname && 
+            currentUrl.search === redirectUrlObj.search) {
+          console.error("⚠️ WARNING: Redirect loop detected! Same URL redirect.");
+          console.error("Current URL:", currentUrl.toString());
+          console.error("Redirect URL:", redirectUrl);
+          // リダイレクトループを防ぐため、500エラーを返す
+          return json({ apiKey: process.env.SHOPIFY_API_KEY || "" }, { status: 500 });
+        }
       }
       throw error;
     }
