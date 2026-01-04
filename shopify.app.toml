@@ -2,10 +2,13 @@
 
 client_id = "dd86bdbd5af3b46679b807523fd9f800"
 name = "delivery-gift-lite"
-# application_url は update-url.sh スクリプトで自動更新されます
-# 手動で変更する場合は、この行を編集してください
-application_url = "https://newfoundland-gulf-wait-finder.trycloudflare.com"
+# Vercelの固定URL（自動更新を防ぐため）
+application_url = "https://v0-vibe-shifter.vercel.app"
 embedded = true
+
+[build]
+# 自動URL更新を無効化（手動で設定したURLを保持するため）
+automatically_update_urls_on_dev = false
 
 [webhooks]
 api_version = "2024-10"
@@ -24,9 +27,7 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://newfoundland-gulf-wait-finder.trycloudflare.com/auth/callback",
-  "https://newfoundland-gulf-wait-finder.trycloudflare.com/auth/shopify/callback"
+  "https://v0-vibe-shifter.vercel.app/auth/callback",
+  "https://v0-vibe-shifter.vercel.app/auth/shopify/callback",
+  "https://v0-vibe-shifter.vercel.app/api/auth/callback"
 ]
-
-[build]
-automatically_update_urls_on_dev = true

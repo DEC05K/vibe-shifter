@@ -3,8 +3,7 @@ import { renderToPipeableStream } from "react-dom/server";
 import { RemixServer } from "@remix-run/react";
 import { createReadableStreamFromReadable } from "@remix-run/node";
 import type { EntryContext } from "@remix-run/node";
-import { isbot } from "isbot"; // ← ★ここを書き換えました（{}をつけました）
-import { handleUrlRedirect } from "./utils/url-redirect.server";
+import { isbot } from "isbot";
 
 const ABORT_DELAY = 5000;
 
@@ -14,22 +13,6 @@ export default function handleRequest(
   responseHeaders: Headers,
   remixContext: EntryContext
 ) {
-  // サーバー側リダイレクトは一時的に無効化（リダイレクトループの問題を解決するため）
-  // デバッグログ
-  const requestUrl = new URL(request.url);
-  console.log("🔍 entry.server.tsx リクエスト受信:", {
-    hostname: requestUrl.hostname,
-    pathname: requestUrl.pathname,
-  });
-  
-  // 古いURLからのリクエストを最新URLにリダイレクト（一時的に無効化）
-  // const redirectResponse = handleUrlRedirect(request);
-  // if (redirectResponse) {
-  //   console.log("🔄 サーバー側リダイレクト実行");
-  //   return redirectResponse;
-  // }
-  
-  // console.log("✅ サーバー側リダイレクト不要");
 
   // Botか人間かを判定
   const userAgent = request.headers.get("user-agent");

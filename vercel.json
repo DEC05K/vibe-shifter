@@ -3,7 +3,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "remix",
-  "regions": ["nrt1"],
   "rewrites": [
     {
       "source": "/(.*)",

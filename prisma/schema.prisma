@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql" // sqlite から変更
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL") // これを追加（重要！）
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // 以下、既存のモデル定義はそのまま残す
