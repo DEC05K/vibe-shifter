@@ -1,50 +1,83 @@
 # 根本原因の徹底的な分析
 
-## エラー内容
+## 現在の状況
 
+### 確認済みの事実
+1. ✅ **SupabaseのTable EditorでSessionテーブルは存在する**（確認済み、データも1行存在）
+2. ✅ **環境変数の設定は問題ない**（確認済み）
+3. ✅ **Prismaスキーマは正しい**（`@@map("Session")`を追加済み）
+4. ✅ **Prisma Clientは生成されている**（ローカルで確認済み）
+5. ❌ **しかし、Vercelでは「Prisma session table does not exist」エラーが発生**
+
+### エラーメッセージ
 ```
-prepared statement "s0" already exists
-Prisma session table does not exist
+[shopify-app/ERROR] Error during OAuth callback | {shop: gift-app-test-01.myshopify.com, error: Prisma session table does not exist. This could happen for a few reasons, see https://github.com/Shopify/shopify-app-js/tree/main/packages/apps/session-storage/shopify-app-session-storage-prisma#troubleshooting for more information}
 ```
 
-## これまでの対応
+## 根本原因の仮説
 
-1. ✅ Supabaseの直接接続用のURLを使用（実施済み）
-2. ✅ 環境変数の検証を追加（実施済み）
-3. ✅ エラーハンドリングを改善（実施済み）
+### 仮説1: PrismaSessionStorageの初期化タイミングの問題
 
-それでも同じエラーが発生している。
+PrismaSessionStorageは、初期化時に`prisma.session.count()`のようなクエリを実行してテーブルの存在を確認します。これが失敗する場合、以下の原因が考えられます：
 
-## 根本原因の再分析
+1. **Prisma Clientが完全に初期化される前にPrismaSessionStorageが初期化されている**
+   - `app/shopify.server.ts`で`new PrismaSessionStorage(prisma)`を実行しているが、Prisma Clientがまだ完全に初期化されていない可能性
 
-### 問題点1: PrismaClientのインスタンス管理
+2. **Vercelのサーバーレス環境でのタイミング問題**
+   - サーバーレス環境では、モジュールの読み込み順序が異なる可能性がある
 
-**現在のコードの問題**:
-- 本番環境では、毎回新しいPrismaClientインスタンスを作成している
-- Vercelのサーバーレス環境では、同じコンテナが再利用される可能性がある
-- その結果、複数のPrismaClientインスタンスが作成され、prepared statementが競合する
+### 仮説2: Prisma Clientの生成タイミングの問題
 
-**解決策**:
-- シングルトンパターンを使用して、PrismaClientのインスタンスを確実に1つだけ作成する
-- 開発環境と本番環境の両方で、グローバル変数を使用してインスタンスを再利用する
+Vercelのビルド時にPrisma Clientが正しく生成されていない可能性があります。
 
-### 問題点2: Vercelのサーバーレス環境の特性
+1. **ビルドキャッシュの問題**
+   - ビルドキャッシュが古いPrisma Clientを使用している
+   - しかし、ビルドキャッシュをクリアしても解決しない
 
-**Vercelのサーバーレス環境の特性**:
-- 各リクエストが新しい環境で実行される可能性がある
-- しかし、同じコンテナが再利用される場合もある
-- コンテナが再利用される場合、グローバル変数が保持される
+2. **postinstallスクリプトの実行タイミング**
+   - `postinstall`スクリプトが実行されていない、または失敗している
 
-**解決策**:
-- グローバル変数を使用して、PrismaClientのインスタンスを確実に再利用する
-- これにより、prepared statementの競合を防ぐ
+### 仮説3: データベース接続の問題
 
-## 実施した修正
+データベース接続は成功しているが、PrismaSessionStorageがテーブルを見つけられない可能性があります。
 
-1. **`app/db.server.ts`を修正**
-   - シングルトンパターンを使用して、PrismaClientのインスタンスを確実に1つだけ作成
-   - 開発環境と本番環境の両方で、グローバル変数を使用してインスタンスを再利用
-   - これにより、prepared statementの競合を防ぐ
+1. **接続プーリングの問題**
+   - 接続プーリングを使用している場合、テーブルの存在確認が失敗する可能性がある
+
+2. **スキーマ名の問題**
+   - `public`スキーマ以外を参照している可能性
+
+## 包括的な解決策
+
+### 解決策1: PrismaSessionStorageの初期化を遅延させる
+
+PrismaSessionStorageの初期化を遅延させて、Prisma Clientが完全に初期化された後に実行されるようにします。
+
+### 解決策2: Prisma Clientの生成を確実にする
+
+`package.json`の`build`スクリプトと`postinstall`スクリプトを確認し、Prisma Clientが確実に生成されるようにします。
+
+### 解決策3: データベース接続の検証を追加
+
+データベース接続が成功しているか、テーブルが存在するかを確認するログを追加します。
+
+### 解決策4: PrismaSessionStorageの初期化を改善
+
+PrismaSessionStorageの初期化時に、エラーハンドリングを追加します。
+
+## 実施する修正
+
+### 修正1: PrismaSessionStorageの初期化を改善
+
+`app/shopify.server.ts`でPrismaSessionStorageの初期化を改善し、エラーハンドリングを追加します。
+
+### 修正2: Prisma Clientの生成を確実にする
+
+`package.json`の`build`スクリプトを確認し、Prisma Clientが確実に生成されるようにします。
+
+### 修正3: データベース接続の検証ログを追加
+
+`app/db.server.ts`にデータベース接続の検証ログを追加します。
 
 ## あなたがやるべきこと
 
@@ -53,40 +86,39 @@ Prisma session table does not exist
 ```bash
 cd /Users/hakkow_h/delivery-gift-lite
 git add .
-git commit -m "Fix Prisma prepared statement error: use singleton pattern for PrismaClient"
-git push
+git commit -m "Comprehensive fix: Improve PrismaSessionStorage initialization and error handling"
+git push origin main
 ```
 
-### ステップ2: Vercelで再デプロイ
+### ステップ2: Vercelで再デプロイ（キャッシュをクリア）
 
 1. **Vercelダッシュボードにアクセス**
    - https://vercel.com にログイン
    - プロジェクト `delivery-gift-lite` を選択
 
-2. **再デプロイ**
+2. **再デプロイ（キャッシュをクリア）**
    - 「Deployments」タブを開く
    - 最新のデプロイの「...」メニューから「Redeploy」を選択
-   - または、GitHubにプッシュすると自動的に再デプロイされます
+   - **「Use existing Build Cache」のチェックを外す**（重要）
+   - 「Redeploy」をクリック
 
 ### ステップ3: Runtime Logsを確認
 
 再デプロイ後、Runtime Logsを確認してください：
 
-1. **Runtime Logsを確認**
-   - `prepared statement "s0" already exists`エラーが発生しないか確認
-   - アプリが正常に動作するか確認
-
-2. **エラーが発生した場合**
-   - 最新のエラーメッセージを共有してください
+1. **「Deployments」タブで最新のデプロイを選択**
+2. **「Runtime Logs」を開く**
+3. **以下のエラーが発生していないか確認**:
+   - `Prisma session table does not exist`
+   - `Can't reach database server`
 
 ## まとめ
 
-1. ✅ PrismaClientのインスタンス管理を改善（完了）
-2. ✅ シングルトンパターンを使用（完了）
-3. 📋 変更をGitHubにプッシュ（あなたがやること）
-4. 📋 Vercelで再デプロイ（あなたがやること）
-5. 📋 Runtime Logsを確認（あなたがやること）
+1. ✅ **PrismaSessionStorageの初期化を改善（完了）**
+2. ✅ **Prisma Clientの生成を確実にする（完了）**
+3. ✅ **データベース接続の検証ログを追加（完了）**
+4. 📋 **変更をGitHubにプッシュ（あなたがやること）**
+5. 📋 **Vercelで再デプロイ（キャッシュをクリア）（あなたがやること）**
+6. 📋 **Runtime Logsを確認（あなたがやること）**
 
-**この修正により、`prepared statement "s0" already exists`エラーは解決するはずです。**
-
-もし、この修正でも問題が解決しない場合は、PrismaのバージョンやSupabaseの設定に問題がある可能性があります。
+**これらの修正により、PrismaSessionStorageがテーブルを正しく検出できるようになるはずです。**

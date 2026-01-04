@@ -59,6 +59,14 @@ if (!appUrl) {
   }
 }
 
+// PrismaSessionStorageを初期化
+// テーブル名を明示的に指定（Prismaスキーマで@@map("Session")を使用しているため）
+// PrismaSessionStorageはデフォルトで'session'（小文字）を探すが、
+// データベースには'Session'（大文字）が存在するため、明示的に指定
+const sessionStorage = new PrismaSessionStorage(prisma, {
+  tableName: "Session", // テーブル名を明示的に指定（大文字のS）
+});
+
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
@@ -66,7 +74,7 @@ const shopify = shopifyApp({
   scopes: process.env.SCOPES?.split(",") || [],
   appUrl: appUrl || "https://v0-vibe-shifter.vercel.app", // フォールバックURLを設定
   authPathPrefix: "/auth",
-  sessionStorage: new PrismaSessionStorage(prisma),
+  sessionStorage: sessionStorage,
   distribution: AppDistribution.AppStore,
   restResources,
   billing: {

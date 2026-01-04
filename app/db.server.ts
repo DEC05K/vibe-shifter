@@ -14,6 +14,13 @@ if (!process.env.DATABASE_URL) {
     console.error("⚠️ WARNING: Using connection pooling URL (pooler.supabase.com). This may cause 'prepared statement already exists' errors.");
     console.error("Please use Direct connection URL (db.xxxxx.supabase.co) instead.");
   }
+  
+  // データベース接続の検証ログ（デバッグ用）
+  if (process.env.NODE_ENV === "production") {
+    const dbUrl = process.env.DATABASE_URL;
+    const maskedUrl = dbUrl.replace(/:[^:@]+@/, ":****@"); // パスワードをマスク
+    console.log("DATABASE_URL configured:", maskedUrl);
+  }
 }
 
 // PrismaClientのインスタンス管理（シングルトンパターン）
