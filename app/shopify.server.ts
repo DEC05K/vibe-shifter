@@ -170,8 +170,8 @@ try {
   console.log("=== Initializing PrismaSessionStorage ===");
   console.log("PrismaSessionStorage options:", {
     tableName: "session",
-    connectionRetries: 10, // デフォルトの2回から10回に大幅に増やす
-    connectionRetryIntervalMs: 5000, // 5秒間隔（デフォルトと同じ）
+    connectionRetries: 10, // デフォルトの2回から10回に大幅に増やす（Vercelコールドスタート対応）
+    connectionRetryIntervalMs: 2000, // 2秒間隔（Vercelコールドスタート時のDB接続遅延に対応）
   });
   
   // 初期化前に、prisma.sessionが利用可能か再確認
@@ -187,7 +187,8 @@ try {
   prismaSessionStorage = new PrismaSessionStorage(prisma, {
     tableName: "session", // Prisma Clientのモデル名（小文字）を指定
     connectionRetries: 10, // 接続リトライ回数を大幅に増やす（デフォルト: 2 → 10）
-    connectionRetryIntervalMs: 5000, // リトライ間隔（デフォルト: 5000ms）
+    // Vercelのコールドスタート時にDB接続が遅れても、エラーにならずに待機するように設定
+    connectionRetryIntervalMs: 2000, // リトライ間隔を2秒に設定（デフォルト: 5000ms → 2000ms）
   });
   console.log("✅ PrismaSessionStorage instance created");
   
