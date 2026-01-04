@@ -11,14 +11,36 @@ import prisma from "./db.server";
 
 export const MONTHLY_PLAN = "Monthly Subscription";
 
-// 環境変数からURLを取得（動的取得は一時的に無効化）
+// 環境変数の検証
+const requiredEnvVars = {
+  SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY,
+  SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET,
+  SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
+  SCOPES: process.env.SCOPES,
+  DATABASE_URL: process.env.DATABASE_URL,
+};
+
+// 必須環境変数のチェック
+const missingEnvVars = Object.entries(requiredEnvVars)
+  .filter(([_, value]) => !value)
+  .map(([key]) => key);
+
+if (missingEnvVars.length > 0) {
+  console.error("Missing required environment variables:", missingEnvVars.join(", "));
+}
+
+// 環境変数からURLを取得
 const appUrl = process.env.SHOPIFY_APP_URL || "";
+
+if (!appUrl) {
+  console.error("SHOPIFY_APP_URL is not set. This may cause authentication issues.");
+}
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: "2024-10",
-  scopes: process.env.SCOPES?.split(","),
+  scopes: process.env.SCOPES?.split(",") || [],
   appUrl: appUrl, // 環境変数から取得（リダイレクトループを防ぐため）
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),

@@ -8,15 +8,28 @@ import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
-    await authenticate.admin(request);
+    // 環境変数の検証
+    if (!process.env.SHOPIFY_API_KEY) {
+      console.error("SHOPIFY_API_KEY is not set");
+      throw new Response("SHOPIFY_API_KEY is not configured", { status: 500 });
+    }
+
+    const result = await authenticate.admin(request);
     return json({ apiKey: process.env.SHOPIFY_API_KEY || "" });
   } catch (error) {
+    // エラーの詳細をログに記録
+    console.error("Authentication error in app.tsx loader:", error);
+    
     // 認証エラーの場合、Shopifyの認証フローに任せる（リダイレクトを投げる）
-    // ただし、無限ループを防ぐため、エラーを再スロー
     if (error instanceof Response) {
       throw error;
     }
-    // その他のエラーの場合も再スロー
+    
+    // その他のエラーの場合、500エラーを返す
+    if (error instanceof Error) {
+      console.error("Error details:", error.message, error.stack);
+    }
+    
     throw error;
   }
 };
