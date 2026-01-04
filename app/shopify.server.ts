@@ -22,10 +22,6 @@ const requiredEnvVars = [
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
 
 if (missingEnvVars.length > 0) {
-  console.error(
-    "❌ Missing required environment variables:",
-    missingEnvVars.join(", ")
-  );
   if (process.env.NODE_ENV === "production") {
     throw new Error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
   }
@@ -66,8 +62,11 @@ const shopify = shopifyApp({
       shopify.registerWebhooks({ session });
     },
   },
-  // futureブロックを削除し、isEmbeddedAppを明示
-  isEmbeddedApp: true,
+  // ▼▼▼ ここを復活！Vercelでは必須です ▼▼▼
+  future: {
+    unstable_newEmbeddedAuthStrategy: true, 
+  },
+  // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
     : {}),
