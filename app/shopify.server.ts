@@ -249,7 +249,7 @@ const shopify = shopifyApp({
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: "2024-10",
   scopes: process.env.SCOPES?.split(",") || [],
-  appUrl: appUrl || "https://v0-vibe-shifter.vercel.app", // フォールバックURLを設定
+  appUrl: process.env.SHOPIFY_APP_URL || "https://v0-vibe-shifter.vercel.app", // フォールバックURLを設定
   authPathPrefix: "/auth",
   sessionStorage: prismaSessionStorage,
   distribution: AppDistribution.AppStore,
