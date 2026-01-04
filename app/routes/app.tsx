@@ -7,64 +7,62 @@ import polarisTranslations from "@shopify/polaris/locales/en.json";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  // 環境変数の検証（早期リターンでエラーを防ぐ）
+  if (!process.env.SHOPIFY_API_KEY) {
+    console.error("SHOPIFY_API_KEY is not set");
+    return json({ apiKey: "" }, { status: 500 });
+  }
+
+  // SHOPIFY_APP_URLの検証
+  const appUrl = process.env.SHOPIFY_APP_URL;
+  if (!appUrl) {
+    console.error("SHOPIFY_APP_URL is not set");
+    return json({ apiKey: process.env.SHOPIFY_API_KEY || "" }, { status: 500 });
+  }
+
+  // URLが有効か確認
   try {
-    // 環境変数の検証
-    if (!process.env.SHOPIFY_API_KEY) {
-      console.error("SHOPIFY_API_KEY is not set");
-      throw new Response("SHOPIFY_API_KEY is not configured", { status: 500 });
+    const url = new URL(appUrl);
+    if (url.protocol !== "https:") {
+      console.error(`SHOPIFY_APP_URL must use https protocol. Current: ${appUrl}`);
+      return json({ apiKey: process.env.SHOPIFY_API_KEY || "" }, { status: 500 });
     }
+  } catch (urlError) {
+    console.error(`Invalid SHOPIFY_APP_URL: ${appUrl}`, urlError);
+    return json({ apiKey: process.env.SHOPIFY_API_KEY || "" }, { status: 500 });
+  }
 
-    // SHOPIFY_APP_URLの検証
-    const appUrl = process.env.SHOPIFY_APP_URL;
-    if (!appUrl) {
-      console.error("SHOPIFY_APP_URL is not set");
-      throw new Response("SHOPIFY_APP_URL is not configured", { status: 500 });
-    }
-
-    // URLが有効か確認
-    try {
-      const url = new URL(appUrl);
-      if (url.protocol !== "https:") {
-        console.error(`SHOPIFY_APP_URL must use https protocol. Current: ${appUrl}`);
-        throw new Response("SHOPIFY_APP_URL must use https protocol", { status: 500 });
-      }
-    } catch (urlError) {
-      console.error(`Invalid SHOPIFY_APP_URL: ${appUrl}`, urlError);
-      throw new Response("SHOPIFY_APP_URL is invalid", { status: 500 });
-    }
-
-    const result = await authenticate.admin(request);
+  try {
+    // 認証を実行（これがリダイレクトを返す可能性がある）
+    await authenticate.admin(request);
     return json({ apiKey: process.env.SHOPIFY_API_KEY || "" });
   } catch (error) {
     // エラーの詳細をログに記録
     console.error("Authentication error in app.tsx loader:", error);
     
-    // ShopifyErrorの場合、詳細をログに記録
-    if (error instanceof Error && error.name === "ShopifyError") {
-      console.error("ShopifyError details:", {
+    // Responseオブジェクト（リダイレクト）の場合は、そのまま再スロー
+    // これにより、Shopifyの認証フローが正常に動作する
+    if (error instanceof Response) {
+      // リダイレクトループを防ぐため、リダイレクト先を確認
+      const redirectUrl = error.headers.get("Location");
+      if (redirectUrl) {
+        console.log("Redirecting to:", redirectUrl);
+      }
+      throw error;
+    }
+    
+    // その他のエラーの場合、詳細をログに記録して500エラーを返す
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        name: error.name,
         message: error.message,
         stack: error.stack,
         SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
       });
     }
     
-    // 認証エラーの場合、Shopifyの認証フローに任せる（リダイレクトを投げる）
-    if (error instanceof Response) {
-      throw error;
-    }
-    
-    // ShopifyErrorの場合、500エラーを返す（リダイレクトループを防ぐ）
-    if (error instanceof Error && error.message.includes("Invalid URL")) {
-      console.error("Invalid URL error detected. This may cause redirect loops.");
-      throw new Response("Invalid URL configuration. Please check SHOPIFY_APP_URL.", { status: 500 });
-    }
-    
-    // その他のエラーの場合、500エラーを返す
-    if (error instanceof Error) {
-      console.error("Error details:", error.message, error.stack);
-    }
-    
-    throw error;
+    // エラーページを表示するため、500エラーを返す（リダイレクトループを防ぐ）
+    return json({ apiKey: process.env.SHOPIFY_API_KEY || "" }, { status: 500 });
   }
 };
 

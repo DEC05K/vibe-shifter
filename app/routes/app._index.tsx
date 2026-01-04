@@ -49,13 +49,37 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       isPremium, // フロントエンドに「課金済みか？」を渡す
     });
   } catch (error) {
-    // 認証エラーの場合、Shopifyの認証フローに任せる（リダイレクトを投げる）
-    // ただし、無限ループを防ぐため、エラーを再スロー
+    // エラーの詳細をログに記録
+    console.error("Error in app._index.tsx loader:", error);
+    
+    // Responseオブジェクト（リダイレクト）の場合は、そのまま再スロー
+    // これにより、Shopifyの認証フローが正常に動作する
     if (error instanceof Response) {
+      const redirectUrl = error.headers.get("Location");
+      if (redirectUrl) {
+        console.log("Redirecting to:", redirectUrl);
+      }
       throw error;
     }
-    // その他のエラーの場合も再スロー
-    throw error;
+    
+    // その他のエラーの場合、詳細をログに記録して500エラーを返す
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+    
+    // エラーページを表示するため、500エラーを返す（リダイレクトループを防ぐ）
+    return json(
+      {
+        shopName: "Error",
+        isPremium: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 };
 
