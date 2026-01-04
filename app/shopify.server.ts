@@ -65,9 +65,109 @@ if (!appUrl) {
 // - データベーステーブル名: "session" (小文字)
 // - Prisma Clientアクセス: prisma.session (小文字)
 // - PrismaSessionStorage tableName: "session" (小文字)
-const prismaSessionStorage = new PrismaSessionStorage(prisma, {
-  tableName: "session", // Prisma Clientのモデル名（小文字）を指定
-});
+
+// デバッグ: Prisma Clientの状態を確認
+console.log("=== PrismaSessionStorage Initialization ===");
+console.log("Prisma Client instance:", prisma ? "exists" : "null");
+console.log("Prisma Client type:", typeof prisma);
+console.log("Prisma Client keys:", prisma ? Object.keys(prisma).filter(k => !k.startsWith('$') && !k.startsWith('_')).slice(0, 10) : "N/A");
+console.log("prisma.session:", typeof prisma.session);
+console.log("prisma.session exists:", !!prisma.session);
+console.log("prisma.session type:", prisma.session ? typeof prisma.session : "undefined");
+
+// Prisma Clientが正しく初期化されているか確認
+if (!prisma) {
+  console.error("❌ CRITICAL: Prisma Client is null or undefined");
+  throw new Error("Prisma Client is not properly initialized. prisma is null or undefined.");
+}
+
+if (!prisma.session) {
+  console.error("❌ CRITICAL: prisma.session is not available");
+  console.error("Available Prisma Client properties:", Object.keys(prisma).filter(k => !k.startsWith('$') && !k.startsWith('_')).join(", "));
+  console.error("Prisma Client constructor:", prisma.constructor?.name);
+  
+  // Prisma Clientが生成されていない可能性があるため、エラーを投げる
+  throw new Error(
+    "Prisma Client is not properly initialized. prisma.session is not available. " +
+    "This usually means Prisma Client was not generated correctly. " +
+    "Please run 'npx prisma generate' and redeploy."
+  );
+}
+
+// テーブルの存在を確認（デバッグ用 - 非同期で実行）
+prisma.session
+  .count()
+  .then((count) => {
+    console.log("✅ Prisma session table exists. Record count:", count);
+  })
+  .catch((error) => {
+    console.error("❌ Prisma session table check failed:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      name: error.name,
+      stack: error.stack,
+    });
+  });
+
+// PrismaSessionStorageを初期化
+// 注意: PrismaSessionStorageは初期化時にテーブルの存在を確認するため、
+// prisma.sessionが利用可能である必要があります
+// また、データベース接続が確立されている必要があります
+
+// データベース接続を確立（PrismaSessionStorageの初期化前に接続を確実にする）
+console.log("Establishing database connection...");
+prisma.$connect()
+  .then(() => {
+    console.log("✅ Database connection established");
+  })
+  .catch((error) => {
+    console.error("❌ Failed to connect to database:", error);
+    // 接続エラーでも続行（PrismaSessionStorageが接続を試みる）
+  });
+
+let prismaSessionStorage: PrismaSessionStorage;
+try {
+  console.log("Initializing PrismaSessionStorage with tableName: 'session'");
+  console.log("PrismaSessionStorage options:", {
+    tableName: "session",
+    connectionRetries: 5, // デフォルトの2回から5回に増やす
+    connectionRetryIntervalMs: 10000, // デフォルトの5秒から10秒に増やす
+  });
+  
+  prismaSessionStorage = new PrismaSessionStorage(prisma, {
+    tableName: "session", // Prisma Clientのモデル名（小文字）を指定
+    connectionRetries: 5, // 接続リトライ回数を増やす（デフォルト: 2）
+    connectionRetryIntervalMs: 10000, // リトライ間隔を増やす（デフォルト: 5000ms）
+  });
+  console.log("✅ PrismaSessionStorage initialized successfully");
+  
+  // 初期化後の状態を確認（非同期）
+  prismaSessionStorage.isReady()
+    .then((isReady) => {
+      console.log("PrismaSessionStorage isReady:", isReady);
+      if (!isReady) {
+        console.error("⚠️ WARNING: PrismaSessionStorage is not ready");
+      }
+    })
+    .catch((error) => {
+      console.error("❌ PrismaSessionStorage isReady check failed:", error);
+    });
+} catch (error) {
+  console.error("❌ CRITICAL: Failed to initialize PrismaSessionStorage");
+  console.error("Error:", error);
+  console.error("Error details:", {
+    message: error instanceof Error ? error.message : String(error),
+    name: error instanceof Error ? error.name : typeof error,
+    stack: error instanceof Error ? error.stack : "No stack trace",
+  });
+  
+  // エラーが発生しても、アプリは起動を続ける（後で接続を試みる）
+  // ただし、セッションストレージは使用できない
+  console.error("⚠️ WARNING: Continuing without PrismaSessionStorage. Session storage will not work.");
+  throw error;
+}
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
