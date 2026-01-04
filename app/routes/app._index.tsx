@@ -17,30 +17,46 @@ import { authenticate, MONTHLY_PLAN } from "../shopify.server";
 
 // サーバー側: データの読み込みと処理
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin, billing } = await authenticate.admin(request);
-
-  // 1. 現在の課金状態をチェック
-  // check() は、そのプランが有効なら { hasActivePayment: true } を返します
-  let isPremium = false;
   try {
-    const billingCheck = await billing.check({
-      plans: [MONTHLY_PLAN],
-      isTest: true,
-    } as any);
-    isPremium = billingCheck.hasActivePayment;
+    const { admin, billing } = await authenticate.admin(request);
+
+    // 1. 現在の課金状態をチェック
+    // check() は、そのプランが有効なら { hasActivePayment: true } を返します
+    let isPremium = false;
+    try {
+      const billingCheck = await billing.check({
+        plans: [MONTHLY_PLAN],
+        isTest: true,
+      } as any);
+      isPremium = billingCheck.hasActivePayment;
+    } catch (error) {
+      console.log("Billing check skipped or failed:", error);
+      isPremium = false;
+    }
+
+    // 2. ショップ情報を取得（念のため）
+    let shopName = "My Shop";
+    try {
+      const response = await admin.graphql(`query { shop { name } }`);
+      const shopData = await response.json();
+      shopName = shopData.data?.shop?.name || "My Shop";
+    } catch (error) {
+      console.error("Failed to fetch shop name:", error);
+    }
+
+    return json({
+      shopName,
+      isPremium, // フロントエンドに「課金済みか？」を渡す
+    });
   } catch (error) {
-    console.log("Billing check skipped or failed:", error);
-    isPremium = false;
+    // 認証エラーの場合、Shopifyの認証フローに任せる（リダイレクトを投げる）
+    // ただし、無限ループを防ぐため、エラーを再スロー
+    if (error instanceof Response) {
+      throw error;
+    }
+    // その他のエラーの場合も再スロー
+    throw error;
   }
-
-  // 2. ショップ情報を取得（念のため）
-  const response = await admin.graphql(`query { shop { name } }`);
-  const shopData = await response.json();
-
-  return json({
-    shopName: shopData.data?.shop?.name || "My Shop",
-    isPremium, // フロントエンドに「課金済みか？」を渡す
-  });
 };
 
 // サーバー側: ボタンが押された時の処理

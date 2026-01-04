@@ -7,8 +7,18 @@ import polarisTranslations from "@shopify/polaris/locales/en.json";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-  return json({ apiKey: process.env.SHOPIFY_API_KEY || "" });
+  try {
+    await authenticate.admin(request);
+    return json({ apiKey: process.env.SHOPIFY_API_KEY || "" });
+  } catch (error) {
+    // 認証エラーの場合、Shopifyの認証フローに任せる（リダイレクトを投げる）
+    // ただし、無限ループを防ぐため、エラーを再スロー
+    if (error instanceof Response) {
+      throw error;
+    }
+    // その他のエラーの場合も再スロー
+    throw error;
+  }
 };
 
 export default function App() {
