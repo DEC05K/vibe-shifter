@@ -2,49 +2,25 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
-  console.log("=== OAuth Callback Handler ===");
-  console.log("Request URL:", url.toString());
-  console.log("Pathname:", url.pathname);
-  console.log("Search params:", url.searchParams.toString());
-  
   try {
-    console.log("Step 1: Calling authenticate.admin(request)...");
-    const result = await authenticate.admin(request);
-    console.log("✅ Authentication successful");
-    console.log("Result:", result ? "Session exists" : "No session");
-    
-    // 認証が成功した場合、リダイレクトが必要な場合はリダイレクトを返す
-    // ただし、リダイレクトループを防ぐため、現在のURLを確認
-    const currentPath = url.pathname;
-    if (currentPath.includes("/auth/callback")) {
-      console.log("OAuth callback completed. Redirecting to app...");
-      // 認証が完了したら、アプリのルートにリダイレクト
-      // ただし、リダイレクトループを防ぐため、Responseオブジェクトを返すのではなく、
-      // authenticate.admin()が返すリダイレクトを使用
-    }
-    
+    // 認証フロー（ログイン開始、コールバック処理、iframe脱出など）をすべて自動処理
+    // ※ 処理が必要な場合、内部で自動的にリダイレクト(Response)が throw されます
+    await authenticate.admin(request);
+
+    // すべて正常に完了した場合
     return null;
   } catch (error) {
-    console.error("❌ OAuth callback error:", error);
-    
-    // Responseオブジェクト（リダイレクト）の場合は、そのまま再スロー
+    // Responseオブジェクト（リダイレクト）は正常な動作なので、そのまま通過させる
     if (error instanceof Response) {
-      const redirectUrl = error.headers.get("Location");
-      console.log("Redirecting to:", redirectUrl);
+      // デバッグ: リダイレクト先をログに残す（ループしていないか確認するため）
+      const location = error.headers.get("Location");
+      const status = error.status;
+      console.log(`[Auth] Handling redirect (${status}) to: ${location}`);
       throw error;
     }
-    
-    // その他のエラーの場合、詳細をログに記録
-    if (error instanceof Error) {
-      console.error("Error details:", {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      });
-    }
-    
-    // エラーを再スローして、Shopifyの認証フローに任せる
+
+    // 本当のエラー（DB接続失敗や設定ミスなど）のみログに出力
+    console.error("❌ Auth Route Critical Error:", error);
     throw error;
   }
 };
