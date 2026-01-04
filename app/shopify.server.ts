@@ -60,10 +60,11 @@ if (!appUrl) {
 }
 
 // PrismaSessionStorageを初期化
-// 重要: tableNameパラメータには、Prisma Clientのモデル名を指定する必要があります
-// Prisma Clientでは、モデル名が"Session"の場合、prisma.session（小文字）としてアクセスできます
-// データベースのテーブル名は@@map("Session")で指定されているため、大文字の"Session"が使用されます
-// しかし、PrismaSessionStorageのtableNameパラメータには、Prisma Clientのモデル名（小文字の"session"）を指定する必要があります
+// 重要: すべて小文字に統一してトラブルを回避
+// - Prismaスキーマ: model Session { ... @@map("session") }
+// - データベーステーブル名: "session" (小文字)
+// - Prisma Clientアクセス: prisma.session (小文字)
+// - PrismaSessionStorage tableName: "session" (小文字)
 const prismaSessionStorage = new PrismaSessionStorage(prisma, {
   tableName: "session", // Prisma Clientのモデル名（小文字）を指定
 });

@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 以下、既存のモデル定義はそのまま残す
+// Sessionモデル: すべて小文字に統一してトラブルを回避
 model Session {
   id                  String    @id
   shop                String
@@ -27,5 +27,5 @@ model Session {
   refreshToken        String?
   refreshTokenExpires DateTime?
 
-  @@map("Session")
+  @@map("session") // データベースのテーブル名も小文字に統一
 }
