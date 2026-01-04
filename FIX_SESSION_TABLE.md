@@ -136,3 +136,4 @@ npx prisma db pull
 
 **最も簡単な方法は、方法1の`prisma db push`を実行することです。**
 
+

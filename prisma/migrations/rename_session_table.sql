@@ -32,3 +32,4 @@ WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'Sessio
 
 -- 注意: ステップ3は、ステップ2が成功し、データが正しくコピーされたことを確認してから実行してください
 
+

@@ -100,3 +100,4 @@ PrismaSessionStorageは`getSessionTable()`メソッドで`this.prisma[this.table
 
 この修正により、「Prisma session table does not exist」エラーは解決するはずです。特に、`tableName`パラメータを小文字の`"session"`に変更したことで、PrismaSessionStorageが正しくPrisma Clientのモデルにアクセスできるようになります。
 
+

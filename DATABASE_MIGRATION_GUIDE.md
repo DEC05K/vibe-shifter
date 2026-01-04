@@ -80,3 +80,4 @@ npx prisma db push
 
 Supabaseのバックアップから復元するか、`Session`（大文字）テーブルがまだ存在する場合は、データをコピーしてください。
 
+

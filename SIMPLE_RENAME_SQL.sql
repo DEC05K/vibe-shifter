@@ -39,3 +39,4 @@ WHERE table_schema = 'public'
 AND table_name = 'session'
 ORDER BY ordinal_position;
 
+

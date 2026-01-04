@@ -135,3 +135,4 @@ postgresql://postgres:Blessinghamlet_315%2B@db.xxxxx.supabase.co:5432/postgres
 
 **最も重要なのは、Vercelの環境変数`DATABASE_URL`が正しく設定されていることです。**
 
+

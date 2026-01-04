@@ -121,3 +121,4 @@ postgresql://postgres:[PASSWORD]@db.jhgszqygorqgqmovijzh.supabase.co:5432/postgr
 
 注意: `jhgszqygorqgqmovijzh`はプロジェクト参照IDです。Supabaseのダッシュボードで確認してください。
 
+

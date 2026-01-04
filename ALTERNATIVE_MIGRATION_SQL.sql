@@ -41,3 +41,4 @@ AND (table_name = 'Session' OR table_name = 'session');
 -- データが保持されていることを確認
 SELECT COUNT(*) as count FROM "session";
 
+

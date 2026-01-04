@@ -97,3 +97,4 @@ npx prisma studio
 
 **この修正により、PrismaSessionStorageがテーブルを正しく検出できるようになるはずです。**
 
+
