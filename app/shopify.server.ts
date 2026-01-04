@@ -4,7 +4,6 @@ import {
   DeliveryMethod,
   shopifyApp,
   BillingInterval,
-  LATEST_API_VERSION,
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import { restResources } from "@shopify/shopify-api/rest/admin/2024-10";
@@ -46,7 +45,7 @@ const storage = new PrismaSessionStorage(prisma, {
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: LATEST_API_VERSION,
+  apiVersion: "2024-10", // エラー回避のため直接指定
   scopes: process.env.SCOPES?.split(","),
   
   // 重要: 環境変数を優先し、設定がない場合はVercelのURLをフォールバックとして使用
