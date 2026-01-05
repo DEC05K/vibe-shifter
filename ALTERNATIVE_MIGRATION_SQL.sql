@@ -42,3 +42,4 @@ AND (table_name = 'Session' OR table_name = 'session');
 SELECT COUNT(*) as count FROM "session";
 
 
+

@@ -19,6 +19,7 @@ const shopify = shopifyApp({
   auth: {
     path: "/auth",
     callbackPath: "/auth/callback",
+    loginPath: "/auth/login", // ← 追加
   },
   webhooks: {
     path: "/webhooks",

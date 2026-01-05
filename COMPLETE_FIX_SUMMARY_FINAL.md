@@ -106,3 +106,4 @@ git push origin main
 特に、PrismaSessionStorageの`tableName`パラメータを明示的に指定したことで、「Prisma session table does not exist」エラーは解決するはずです。
 
 
+

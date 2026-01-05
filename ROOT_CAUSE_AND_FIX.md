@@ -110,3 +110,4 @@ git push origin main
 **この修正により、PrismaSessionStorageが正しいテーブル名でテーブルを検索できるようになり、エラーは解決するはずです。**
 
 
+
