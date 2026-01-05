@@ -1,9 +1,8 @@
 import "@shopify/shopify-app-remix/adapters/node";
 import {
   AppDistribution,
-  DeliveryMethod,
-  shopifyApp,
   BillingInterval,
+  shopifyApp,
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import { restResources } from "@shopify/shopify-api/rest/admin/2024-10";
@@ -11,63 +10,35 @@ import prisma from "./db.server";
 
 export const MONTHLY_PLAN = "Monthly Subscription";
 
-const requiredEnvVars = [
-  "SHOPIFY_API_KEY",
-  "SHOPIFY_API_SECRET",
-  "SHOPIFY_APP_URL",
-  "SCOPES",
-  "DATABASE_URL"
-];
-
-const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
-
-if (missingEnvVars.length > 0) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
-  }
-}
-
-const storage = new PrismaSessionStorage(prisma, {
-  tableName: "session",
-  connectionRetries: 10,
-  connectionRetryIntervalMs: 2000,
-});
-
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: "2024-10",
+  apiVersion: "2024-10" as any,
   scopes: process.env.SCOPES?.split(","),
-  appUrl: process.env.SHOPIFY_APP_URL || "https://v0-vibe-shifter.vercel.app",
+  appUrl: process.env.SHOPIFY_APP_URL || "",
   auth: {
     path: "/auth",
     callbackPath: "/auth/callback",
-    loginPath: "/auth/login", // ← これを追加！
   },
   webhooks: {
     path: "/webhooks",
-  },
-  sessionStorage: storage,
+  } as any,
+  sessionStorage: new PrismaSessionStorage(prisma, {
+    tableName: "session",
+  }),
   distribution: AppDistribution.AppStore,
-  restResources,
+  restResources: restResources as any,
   billing: {
     [MONTHLY_PLAN]: {
       amount: 9.99,
       currencyCode: "USD",
-      interval: BillingInterval.Every30Days,
+      interval: BillingInterval.Every30Days as any,
       test: true,
     },
-  },
-  hooks: {
-    afterAuth: async ({ session }) => {
-      shopify.registerWebhooks({ session });
-    },
-  },
-  // ▼▼▼ ここを復活！Vercelでは必須です ▼▼▼
+  } as any,
   future: {
-    unstable_newEmbeddedAuthStrategy: true, 
+    unstable_newEmbeddedAuthStrategy: true,
   },
-  // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
     : {}),
