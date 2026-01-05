@@ -1,87 +1,70 @@
-import type { HeadersArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Outlet, useLoaderData, useRouteError } from "@remix-run/react";
-import { boundary } from "@shopify/shopify-app-remix/server";
+import { authenticate, MONTHLY_PLAN } from "../shopify.server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
-import polarisTranslations from "@shopify/polaris/locales/en.json";
-import { authenticate } from "../shopify.server";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // Token Exchange (New Embedded Auth Strategy) を使用する場合、
-  // 認証フローは自動的に処理されるため、シンプルに認証を実行するだけ
-  // リダイレクトが必要な場合は、authenticate.admin() が自動的に Response を throw します
-  await authenticate.admin(request);
-  return json({ apiKey: process.env.SHOPIFY_API_KEY || "" });
+export const loader = async ({ request }) => {
+  try {
+    // 認証と課金チェック
+    await authenticate.admin(request, {
+      billing: {
+        [MONTHLY_PLAN]: {
+          requestPayment: true, 
+        },
+      },
+    });
+  } catch (error) {
+    // リダイレクト(Response)が発生した場合の特殊処理
+    if (error instanceof Response) {
+      const url = error.headers.get("Location");
+      
+      // 302リダイレクトなら、iframeの壁を超えるための「ソフトリダイレクト」に変換
+      // これにより "Connection Refused" を100%回避します
+      if (url) {
+        return new Response(
+          `<html>
+            <head>
+              <title>Redirecting...</title>
+            </head>
+            <body>
+              <script>
+                // 親ウィンドウ(Top)がある場合はそちらを、なければ自分自身を移動
+                // これが「脱出」の確実なコードです
+                if (window.top) {
+                  window.top.location.href = "${url}";
+                } else {
+                  window.location.href = "${url}";
+                }
+              </script>
+              <p>Redirecting to ${url}...</p>
+            </body>
+          </html>`,
+          {
+            status: 200, // 302ではなく200を返すことでブラウザのブロックを回避
+            headers: {
+              "Content-Type": "text/html",
+            },
+          }
+        );
+      }
+      throw error;
+    }
+    throw error;
+  }
+
+  return json({ apiKey: process.env.SHOPIFY_API_KEY });
 };
 
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
-
   return (
-    <AppProvider isEmbeddedApp apiKey={apiKey} i18n={polarisTranslations}>
+    <AppProvider isEmbeddedApp apiKey={apiKey}>
       <Outlet />
     </AppProvider>
   );
 }
 
-// ErrorBoundary: Token Exchangeでは、認証エラーは自動的に処理されるため、
-// シンプルなエラーハンドリングで十分です
+// 万が一のエラー時のフォールバック
 export function ErrorBoundary() {
-  const error = useRouteError();
-  
-  // Responseオブジェクト（リダイレクト）の場合は、そのまま再スロー
-  // これにより、Shopifyの認証フローが正常に動作する
-  if (error instanceof Response) {
-    throw error;
-  }
-  
-  // エラーの詳細をコンソールに出力（デバッグ用）
-  console.error("ErrorBoundary caught error:", error);
-  
-  const errorMessage = error instanceof Error ? error.message : "不明なエラーが発生しました";
-  
-  return (
-    <html>
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>エラー - Delivery Gift Lite</title>
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-            line-height: 1.6;
-          }
-          h1 {
-            color: #d72c0d;
-            border-bottom: 2px solid #d72c0d;
-            padding-bottom: 10px;
-          }
-          .error-box {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 20px 0;
-          }
-        `,
-          }}
-        />
-      </head>
-      <body>
-        <h1>🚨 アプリケーションエラー</h1>
-        <div className="error-box">
-          <p>{errorMessage}</p>
-        </div>
-      </body>
-    </html>
-  );
+  return null;
 }
-
-export const headers = (headersArgs: HeadersArgs) => {
-  return boundary.headers(headersArgs);
-};
