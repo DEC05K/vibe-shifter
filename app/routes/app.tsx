@@ -66,5 +66,17 @@ export default function App() {
 
 // 万が一のエラー時のフォールバック
 export function ErrorBoundary() {
-  return null;
+  const error = useRouteError();
+  console.error(error); // コンソールにも出す
+  return (
+    <div style={{ padding: "20px", fontFamily: "system-ui" }}>
+      <h1>App Error</h1>
+      <pre style={{ background: "#f4f4f4", padding: "10px", overflow: "scroll" }}>
+        {error instanceof Error ? error.message : JSON.stringify(error, null, 2)}
+      </pre>
+      <p>
+        <a href="/auth/login">Re-authenticate</a>
+      </p>
+    </div>
+  );
 }
